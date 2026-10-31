@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WBFC Bandung - Dashboard Kasir & Admin Web</title>
+  <meta name="description" content="Dashboard Kasir & Admin Web POS Waanal Brothers Food & Coffee (WBFC) Bandung">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              charcoal: '#121214',
+              surface: '#17171d',
+              card: '#1a1a22',
+              border: '#272733',
+              amber: '#f59e0b',
+              amberHover: '#d97706',
+              emerald: '#10b981',
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #0f0f12;
+      color: #f3f4f6;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+    .font-mono-receipt {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Thermal Print Media Styles */
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #print-receipt-paper, #print-receipt-paper * {
+        visibility: visible !important;
+      }
+      #print-receipt-paper {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 80mm !important;
+        margin: 0 !important;
+        padding: 8px !important;
+        background: white !important;
+        color: black !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-500 selection:text-neutral-950">
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="bg-[#121214] border-b border-[#26262b] sticky top-0 z-30 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between py-3.5 gap-3">
+        
+        <!-- Brand Logo & Title -->
+        <div class="flex items-center space-x-3.5">
+          <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-500/20 text-neutral-950 font-black text-xl ring-2 ring-amber-400/30">
+            ☕
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xl font-extrabold tracking-tight text-white">
+                WBFC <span class="text-amber-400">POS & Admin</span>
+              </span>
+              <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                Bandung
+              </span>
+            </div>
+            <p class="text-xs text-neutral-400 font-medium">
+              Waanal Brothers Food & Coffee • Jl. Batununggal Indah I No. 66
+            </p>
+          </div>
+        </div>
+
+        <!-- Right Controls: Clock, Server Status, Cashier -->
+        <div class="flex flex-wrap items-center gap-2.5 sm:gap-4 text-xs">
+          
+          <!-- Realtime Clock -->
+          <div class="flex items-center space-x-2 bg-[#1a1a1f] border border-[#2b2b33] px-3 py-1.5 rounded-lg text-neutral-300">
+            <span class="text-amber-400 font-bold">⏱</span>
+            <span id="header-clock" class="font-mono font-bold text-neutral-100">--:--:-- WIB</span>
+          </div>
+
+          <!-- Server Online Indicator -->
+          <div class="flex items-center space-x-2 bg-emerald-950/40 border border-emerald-800/40 px-3 py-1.5 rounded-lg text-emerald-400 font-medium">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>Server Online</span>
+          </div>
+
+          <!-- Active Cashier Status -->
+          <div class="bg-[#1f1f26] border border-[#33333f] px-3 py-1.5 rounded-lg text-neutral-200">
+            <span class="text-[10px] text-neutral-400 block leading-tight">Kasir Aktif</span>
+            <span id="cashier-display-name" class="font-semibold text-white">Adinda F. (Shift Pagi)</span>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT ==================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- Toast Notification Banner -->
+    <div id="toast-banner" class="hidden mb-4 p-3 rounded-xl border text-xs font-semibold shadow-lg transition-all flex items-center space-x-2">
+      <span id="toast-icon">✓</span>
+      <span id="toast-text">Pemberitahuan</span>
+    </div>
+
+    <!-- 1. STATISTIK RINGKAS / METRICS CARDS -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      
+      <!-- Total Pesanan Hari Ini -->
+      <div onclick="switchTab('history')" class="bg-[#17171c] hover:bg-[#1d1d24] border border-[#272730] rounded-xl p-4 transition-all cursor-pointer group shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Total Pesanan Hari Ini</span>
+          <div class="w-8 h-8 rounded-lg bg-neutral-800 flex items-center justify-center text-sm group-hover:text-amber-400">🛍️</div>
+        </div>
+        <div class="flex items-baseline space-x-2">
+          <span id="metric-total-orders" class="text-3xl font-extrabold text-white">0</span>
+          <span class="text-xs text-neutral-400 font-medium">Transaksi</span>
+        </div>
+        <p class="text-[11px] text-neutral-500 mt-2">Dine-in & Takeaway gabungan</p>
+      </div>
+
+      <!-- Menunggu Pembayaran -->
+      <div onclick="switchTab('queue')" class="bg-gradient-to-b from-[#1c1811] to-[#161514] border border-amber-500/30 rounded-xl p-4 transition-all cursor-pointer shadow-sm relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-amber-300 uppercase tracking-wider">Menunggu Pembayaran</span>
+          <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-sm">⏳</div>
+        </div>
+        <div class="flex items-baseline space-x-2">
+          <span id="metric-pending-orders" class="text-3xl font-extrabold text-amber-400">0</span>
+          <span class="text-xs text-amber-200/80 font-medium">Antrean Kasir</span>
+        </div>
+        <p class="text-[11px] text-amber-300/80 mt-2 flex items-center">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping inline-block mr-1.5"></span>
+          Siap diproses kasir
+        </p>
+      </div>
+
+      <!-- Total Pendapatan Hari Ini -->
+      <div onclick="switchTab('history')" class="bg-gradient-to-b from-[#111c16] to-[#121614] border border-emerald-500/30 rounded-xl p-4 transition-all cursor-pointer shadow-sm relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-emerald-300 uppercase tracking-wider">Total Pendapatan Hari Ini</span>
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm font-bold">Rp</div>
+        </div>
+        <div class="flex items-baseline space-x-2">
+          <span id="metric-total-revenue" class="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono tracking-tight">Rp 0</span>
+        </div>
+        <p class="text-[11px] text-emerald-300/80 mt-2">Dari transaksi lunas kasir</p>
+      </div>
+
+      <!-- Status Stok Habis -->
+      <div onclick="switchTab('stock')" id="metric-stock-card" class="rounded-xl p-4 transition-all cursor-pointer shadow-sm border bg-[#17171c] border-[#272730]">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-rose-300 uppercase tracking-wider">Menu Stok Habis</span>
+          <div class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center text-sm">⚠️</div>
+        </div>
+        <div class="flex items-baseline space-x-2">
+          <span id="metric-out-of-stock" class="text-3xl font-extrabold text-rose-400">0</span>
+          <span class="text-xs text-neutral-400 font-medium">Item Menu</span>
+        </div>
+        <p id="metric-stock-subtext" class="text-[11px] text-neutral-400 mt-2">Perlu restock bahan</p>
+      </div>
+
+    </div>
+
+    <!-- 2. TAB NAVIGATION -->
+    <div class="border-b border-[#252530] mb-6">
+      <nav class="flex space-x-2 sm:space-x-4">
+        
+        <button id="nav-tab-queue" onclick="switchTab('queue')" class="flex items-center space-x-2 py-3 px-3 sm:px-5 font-bold text-xs sm:text-sm border-b-2 border-amber-500 text-amber-400 transition-all">
+          <span>📥</span>
+          <span>Antrean Pesanan Masuk</span>
+          <span id="queue-badge-count" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500 text-neutral-950 font-mono">0</span>
+        </button>
+
+        <button id="nav-tab-stock" onclick="switchTab('stock')" class="flex items-center space-x-2 py-3 px-3 sm:px-5 font-bold text-xs sm:text-sm border-b-2 border-transparent text-neutral-400 hover:text-white transition-all">
+          <span>📋</span>
+          <span>Kelola Stok & Menu</span>
+          <span id="stock-badge-count" class="hidden px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono">0 Habis</span>
+        </button>
+
+        <button id="nav-tab-history" onclick="switchTab('history')" class="flex items-center space-x-2 py-3 px-3 sm:px-5 font-bold text-xs sm:text-sm border-b-2 border-transparent text-neutral-400 hover:text-white transition-all">
+          <span>🧾</span>
+          <span>Riwayat Transaksi Lunas</span>
+        </button>
+
+      </nav>
+    </div>
+
+    <!-- ==================== TAB 1: ANTREAN PESANAN MASUK ==================== -->
+    <section id="section-queue" class="space-y-5">
+      
+      <!-- Filter Bar & Simulation -->
+      <div class="bg-[#17171d] border border-[#272733] rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 shadow-md">
+        <div class="relative flex-1 max-w-md">
+          <input
+            id="queue-search"
+            type="text"
+            oninput="renderQueue()"
+            placeholder="Cari nama pelanggan, kode (#WBFC-), atau meja..."
+            class="w-full pl-9 pr-4 py-2 bg-[#101014] border border-[#2b2b38] rounded-lg text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-amber-500"
+          />
+          <span class="absolute left-3 top-2.5 text-neutral-500 text-sm">🔍</span>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex bg-[#101014] p-1 rounded-lg border border-[#292936] text-xs">
+            <button onclick="setQueueTypeFilter('Semua')" id="filter-type-Semua" class="px-3 py-1.5 rounded-md font-bold bg-amber-500 text-neutral-950">Semua</button>
+            <button onclick="setQueueTypeFilter('Dine-in')" id="filter-type-Dine-in" class="px-3 py-1.5 rounded-md font-medium text-neutral-400 hover:text-white">Dine-in</button>
+            <button onclick="setQueueTypeFilter('Takeaway')" id="filter-type-Takeaway" class="px-3 py-1.5 rounded-md font-medium text-neutral-400 hover:text-white">Takeaway</button>
+          </div>
+
+          <button onclick="simulateNewIncomingOrder()" class="px-3 py-2 rounded-lg bg-[#22222b] hover:bg-[#2b2b38] border border-[#363645] text-amber-300 text-xs font-semibold flex items-center space-x-1">
+            <span>✨ + Simulasi Pesanan</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Pending Orders List Container -->
+      <div id="queue-container" class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <!-- Rendered via JavaScript -->
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: KELOLA STOK & MENU ==================== -->
+    <section id="section-stock" class="hidden space-y-5">
+      
+      <div class="bg-[#17171d] border border-[#272733] rounded-xl p-4 shadow-md space-y-4">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div>
+            <h2 class="text-base font-bold text-white flex items-center space-x-2">
+              <span>⚙️</span>
+              <span>Kelola Ketersediaan Stok Menu Real WBFC Bandung</span>
+            </h2>
+            <p class="text-xs text-neutral-400 mt-0.5">
+              Ubah switch toggle [Tersedia] <--> [Habis]. Perubahan langsung berlaku secara real-time.
+            </p>
+          </div>
+
+          <div class="flex items-center space-x-2 text-xs">
+            <span id="stock-available-count" class="px-3 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-800/40 text-emerald-400 font-semibold">Tersedia: 0</span>
+            <span id="stock-out-count" class="px-3 py-1.5 rounded-lg bg-rose-950/40 border border-rose-800/40 text-rose-400 font-semibold">Habis: 0</span>
+            <button onclick="resetAllStockToAvailable()" class="px-3 py-1.5 rounded-lg bg-[#242430] hover:bg-[#2e2e3d] text-neutral-300 border border-[#383848] font-medium">
+              ↺ Reset Semua Tersedia
+            </button>
+          </div>
+        </div>
+
+        <!-- Category Pills -->
+        <div id="stock-category-pills" class="flex flex-wrap gap-2 pt-2 border-t border-[#252531]">
+          <!-- Category buttons rendered via JS -->
+        </div>
+
+        <!-- Search in Stock -->
+        <div class="pt-1">
+          <input
+            id="stock-search"
+            type="text"
+            oninput="renderStock()"
+            placeholder="Cari menu (misal: Tolikara, Wanagon, Kwetiau, Bebek RW)..."
+            class="w-full sm:max-w-md px-3 py-1.5 bg-[#101014] border border-[#2b2b38] rounded-lg text-xs text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-amber-500"
+          />
+        </div>
+      </div>
+
+      <!-- Menu Grid -->
+      <div id="stock-menu-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: RIWAYAT TRANSAKSI LUNAS ==================== -->
+    <section id="section-history" class="hidden space-y-5">
+      
+      <div class="bg-[#17171d] border border-[#272733] rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 shadow-md">
+        <input
+          id="history-search"
+          type="text"
+          oninput="renderHistory()"
+          placeholder="Cari riwayat, no. transaksi, atau nama pelanggan..."
+          class="w-full md:max-w-md px-3.5 py-2 bg-[#101014] border border-[#2b2b38] rounded-lg text-xs text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-amber-500"
+        />
+
+        <div class="flex items-center space-x-1.5 bg-[#101014] p-1 rounded-lg border border-[#292936] text-xs">
+          <button onclick="setHistoryMethodFilter('Semua')" id="hfilter-Semua" class="px-3 py-1 rounded-md font-bold bg-amber-500 text-neutral-950">Semua</button>
+          <button onclick="setHistoryMethodFilter('Cash')" id="hfilter-Cash" class="px-3 py-1 rounded-md font-medium text-neutral-400 hover:text-white">Cash</button>
+          <button onclick="setHistoryMethodFilter('QRIS')" id="hfilter-QRIS" class="px-3 py-1 rounded-md font-medium text-neutral-400 hover:text-white">QRIS</button>
+          <button onclick="setHistoryMethodFilter('Debit')" id="hfilter-Debit" class="px-3 py-1 rounded-md font-medium text-neutral-400 hover:text-white">Debit</button>
+        </div>
+      </div>
+
+      <div class="bg-[#16161c] border border-[#282835] rounded-xl overflow-hidden shadow-lg">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-[#1c1c24] text-neutral-400 uppercase tracking-wider font-semibold border-b border-[#282835]">
+              <tr>
+                <th class="py-3 px-4">Waktu & Kode</th>
+                <th class="py-3 px-4">Pelanggan & Meja</th>
+                <th class="py-3 px-4">Rincian Menu</th>
+                <th class="py-3 px-4">Metode Bayar</th>
+                <th class="py-3 px-4">Diskon Member</th>
+                <th class="py-3 px-4 text-right">Total Lunas</th>
+                <th class="py-3 px-4 text-center">Aksi Struk</th>
+              </tr>
+            </thead>
+            <tbody id="history-table-body" class="divide-y divide-[#23232c] text-neutral-200">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== MODAL 1: PROSES PEMBAYARAN KASIR ==================== -->
+  <div id="payment-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div class="bg-[#16161c] border border-[#2b2b38] w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden my-6">
+      
+      <div class="bg-[#1c1c24] px-6 py-4 border-b border-[#292936] flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-extrabold text-white">Proses Pembayaran Kasir</h2>
+          <p id="pay-modal-order-meta" class="text-xs text-neutral-400">#WBFC-000 • Nama Pelanggan</p>
+        </div>
+        <button onclick="closePaymentModal()" class="text-neutral-400 hover:text-white text-lg">✕</button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs">
+        <!-- Order Items Preview -->
+        <div id="pay-modal-items-list" class="bg-[#111116] border border-[#252531] rounded-xl p-3.5 max-h-36 overflow-y-auto space-y-1 text-neutral-300">
+          <!-- Items inserted here -->
+        </div>
+
+        <!-- Member WBFC Discount Toggle (-10%) -->
+        <div class="bg-[#1b1915] border border-amber-500/30 rounded-xl p-3.5 flex items-center justify-between">
+          <div>
+            <div class="font-bold text-white text-sm flex items-center space-x-2">
+              <span>Diskon Member WBFC (10%)</span>
+              <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">Spesial</span>
+            </div>
+            <p class="text-neutral-400 text-[11px]">Potongan 10% otomatis untuk seluruh menu</p>
+          </div>
+          <button id="pay-member-toggle-btn" onclick="togglePaymentMember()" class="w-12 h-6 rounded-full bg-neutral-700 p-0.5 transition-colors relative flex items-center">
+            <span id="pay-member-toggle-circle" class="w-5 h-5 rounded-full bg-white transition-all transform translate-x-0"></span>
+          </button>
+        </div>
+
+        <!-- Payment Method Selection -->
+        <div>
+          <label class="font-bold text-neutral-300 uppercase block mb-2 text-[11px]">Pilih Metode Pembayaran</label>
+          <div class="grid grid-cols-3 gap-2.5">
+            <button onclick="setPaymentMethod('Cash')" id="pm-btn-Cash" class="p-3 rounded-xl border text-center font-bold bg-amber-500/15 border-amber-500 text-amber-400">
+              💵 Tunai (Cash)
+            </button>
+            <button onclick="setPaymentMethod('QRIS')" id="pm-btn-QRIS" class="p-3 rounded-xl border text-center font-medium bg-[#121217] border-[#292936] text-neutral-400 hover:text-white">
+              📱 QRIS Barcode
+            </button>
+            <button onclick="setPaymentMethod('Debit')" id="pm-btn-Debit" class="p-3 rounded-xl border text-center font-medium bg-[#121217] border-[#292936] text-neutral-400 hover:text-white">
+              💳 Kartu Debit
+            </button>
+          </div>
+        </div>
+
+        <!-- Cash Details -->
+        <div id="pm-cash-details" class="bg-[#121217] border border-[#262633] rounded-xl p-3.5 space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-neutral-300 font-semibold">Uang Diterima Kasir:</span>
+            <div class="flex gap-1.5" id="pm-cash-presets">
+              <!-- Preset chips -->
+            </div>
+          </div>
+          <div>
+            <input
+              id="pm-cash-input"
+              type="number"
+              oninput="onCashInputChanged(this.value)"
+              class="w-full px-3 py-2 bg-[#181820] border border-[#30303e] rounded-lg text-white font-mono font-bold text-base focus:outline-none focus:border-amber-500"
+              placeholder="0"
+            />
+          </div>
+          <div class="flex justify-between items-center bg-[#171720] p-2.5 rounded-lg border border-[#2b2b38]">
+            <span class="text-neutral-300 font-semibold">Uang Kembalian:</span>
+            <span id="pm-cash-change" class="font-mono font-bold text-emerald-400 text-sm">Rp 0</span>
+          </div>
+        </div>
+
+        <!-- QRIS Details -->
+        <div id="pm-qris-details" class="hidden bg-[#121217] border border-[#262633] rounded-xl p-4 text-center space-y-2">
+          <div class="font-bold text-white text-xs">QRIS WBFC BANDUNG</div>
+          <div class="w-32 h-32 mx-auto bg-white p-2 rounded-lg flex items-center justify-center font-mono text-neutral-900 text-xs">
+            [QRIS MOCK QR]
+          </div>
+          <p class="text-[11px] text-neutral-400">Scan melalui BCA / Mandiri / GoPay / OVO / Dana</p>
+        </div>
+
+        <!-- Debit Details -->
+        <div id="pm-debit-details" class="hidden bg-[#121217] border border-[#262633] rounded-xl p-3.5 space-y-2">
+          <span class="text-neutral-300 font-semibold block">EDC Bank: BCA / Mandiri / BRI</span>
+          <p class="text-[11px] text-neutral-400">Transaksi diselesaikan via terminal EDC terintegrasi</p>
+        </div>
+
+        <!-- Calculation Bottom Summary -->
+        <div class="bg-[#101014] p-3.5 rounded-xl border border-[#252530] space-y-1 text-neutral-400">
+          <div class="flex justify-between">
+            <span>Subtotal:</span>
+            <span id="pay-calc-subtotal" class="font-mono text-neutral-200">Rp 0</span>
+          </div>
+          <div id="pay-calc-discount-row" class="hidden flex justify-between text-emerald-400 font-medium">
+            <span>Diskon Member WBFC (10%):</span>
+            <span id="pay-calc-discount" class="font-mono">-Rp 0</span>
+          </div>
+          <div class="flex justify-between text-sm font-extrabold text-white pt-1.5 border-t border-[#23232e]">
+            <span>Total Akhir:</span>
+            <span id="pay-calc-final-total" class="font-mono text-lg text-amber-400">Rp 0</span>
+          </div>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="flex justify-end space-x-2 pt-2">
+          <button onclick="closePaymentModal()" class="px-4 py-2 rounded-xl bg-[#22222a] hover:bg-[#2b2b35] text-neutral-300 font-semibold">
+            Batal
+          </button>
+          <button id="pay-confirm-submit-btn" onclick="confirmPaymentAndFinish()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 text-white font-bold shadow-lg">
+            ✓ Bayar & Buka Struk Resmi
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: STRUK / NOTA PEMBAYARAN RESMI ==================== -->
+  <div id="receipt-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
+    <div class="bg-[#181820] border border-[#2e2e3d] w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden my-6">
+      
+      <!-- Top Actions -->
+      <div class="bg-[#1f1f2a] px-4 py-3 border-b border-[#2b2b3b] flex items-center justify-between">
+        <span class="text-white font-bold text-xs flex items-center space-x-1.5">
+          <span>🧾</span>
+          <span>Struk Resmi WBFC Bandung</span>
+        </span>
+        <div class="flex items-center space-x-1.5">
+          <button onclick="window.print()" class="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold rounded-lg text-xs">
+            🖨️ Cetak
+          </button>
+          <button onclick="closeReceiptModal()" class="text-neutral-400 hover:text-white px-2 py-1">✕</button>
+        </div>
+      </div>
+
+      <!-- Thermal Receipt View -->
+      <div class="p-4 flex justify-center bg-[#0d0d12]">
+        <div id="print-receipt-paper" class="w-full bg-white text-neutral-900 p-4 rounded-lg shadow-xl font-mono-receipt text-[11px] leading-relaxed">
+          
+          <div class="text-center pb-2.5 border-b border-dashed border-neutral-400">
+            <h2 class="font-extrabold text-sm tracking-tight text-neutral-950 uppercase">WAANAL BROTHERS</h2>
+            <h3 class="font-bold text-[11px] text-neutral-800 uppercase">FOOD & COFFEE (WBFC)</h3>
+            <p class="text-[9px] text-neutral-600 mt-0.5">Jl. Batununggal Indah I No. 66, Bandung</p>
+            <p class="text-[9px] text-neutral-600">Telp: (022) 756-9232 • IG: @wbfc.bandung</p>
+          </div>
+
+          <div id="receipt-meta" class="py-2 border-b border-dashed border-neutral-400 text-[10px] space-y-0.5">
+            <!-- Rendered via JS -->
+          </div>
+
+          <div class="py-2 border-b border-dashed border-neutral-400">
+            <div class="text-[9px] font-bold uppercase text-neutral-600 grid grid-cols-12 mb-1">
+              <span class="col-span-7">ITEM</span>
+              <span class="col-span-2 text-center">QTY</span>
+              <span class="col-span-3 text-right">TOTAL</span>
+            </div>
+            <div id="receipt-items-table" class="space-y-1 text-[10px]">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <div id="receipt-totals" class="py-2 border-b border-dashed border-neutral-400 text-[10px] space-y-0.5">
+            <!-- Rendered via JS -->
+          </div>
+
+          <div class="pt-2.5 text-center space-y-1.5">
+            <div class="text-[10px] font-bold text-neutral-800 uppercase">TERIMA KASIH ATAS KUNJUNGAN ANDA!</div>
+            <p class="text-[8px] text-neutral-600 italic">"Kopi Papua Pegunungan & Kuliner Nusantara di Kota Bandung"</p>
+            <p class="text-[8px] text-neutral-500">WiFi: kopipapuawbfc</p>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="bg-[#1a1a24] p-3 border-t border-[#2a2a38] flex justify-end">
+        <button onclick="closeReceiptModal()" class="px-4 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-semibold">
+          Selesai & Tutup
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+  <script>
+    // 1. DATA REAL MENU WBFC BANDUNG
+    const MENU_ITEMS = [
+      // Papua Single Origin
+      { id: 'pso-1', name: 'Tolikara Single Origin V60', category: 'Papua Single Origin', price: 38000, isAvailable: true, description: 'Arabika Pegunungan Jayawijaya dengan notes floral melati, citrus jeruk nipis, dan clean aftertaste.', isFavorite: true },
+      { id: 'pso-2', name: 'Oksibil Pegunungan Bintang V60', category: 'Papua Single Origin', price: 40000, isAvailable: true, description: 'Kopi lereng Pegunungan Bintang Papua, keasaman lembut rasa buah berry dan silky mouthfeel.', isFavorite: true },
+      { id: 'pso-3', name: 'Okbab Arabica Micro-lot V60', category: 'Papua Single Origin', price: 42000, isAvailable: true, description: 'Biji kopi langka dataran tinggi Okbab, rasa plum manis berpadu brown sugar karamel.' },
+      { id: 'pso-4', name: 'Megapura Wamena V60', category: 'Papua Single Origin', price: 36000, isAvailable: true, description: 'Lembah Baliem Wamena: aroma herbal earthy, dark chocolate, dan body tebal mantap.' },
+      { id: 'pso-5', name: 'Tangma Arabica V60', category: 'Papua Single Origin', price: 38000, isAvailable: true, description: 'Varietas arabika liar distrik Tangma, acidity cerah buah tropis nan segar.' },
+      { id: 'pso-6', name: 'Okhika V60 Special Reserve', category: 'Papua Single Origin', price: 42000, isAvailable: false, description: 'Hasil panen terbatas pegunungan pedalaman Okhika, peach manis harum madu hutan.' },
+      // Espresso Based
+      { id: 'esp-1', name: 'Wanagon Aren Latte (Signature WBFC)', category: 'Espresso Based', price: 35000, isAvailable: true, description: 'Menu ikonik WBFC! Double shot Papua espresso, fresh milk, gula aren murni & rempah.', isFavorite: true },
+      { id: 'esp-2', name: 'Caffe Latte', category: 'Espresso Based', price: 32000, isAvailable: true, description: 'Keseimbangan espresso kaya crema dan susu berbusa mikro halus latte art.' },
+      { id: 'esp-3', name: 'Cappuccino Klasik', category: 'Espresso Based', price: 32000, isAvailable: true, description: 'Double ristretto dengan foam tebal bertabur cokelat.' },
+      { id: 'esp-4', name: 'Caramel Macchiato', category: 'Espresso Based', price: 36000, isAvailable: true, description: 'Sirup vanilla, steamed milk, double espresso dan saus karamel lezat.', isFavorite: true },
+      { id: 'esp-5', name: 'Americano Papua', category: 'Espresso Based', price: 26000, isAvailable: true, description: 'Ekstraksi ganda biji kopi Papua house blend yang harum berkarakter.' },
+      // Non-Coffee & Milkshake
+      { id: 'nc-1', name: 'Matcha Green Tea Latte Uji', category: 'Non-Coffee & Milkshake', price: 34000, isAvailable: true, description: 'Bubuk matcha murni asal Jepang dipadukan dengan susu segar creamy.' },
+      { id: 'nc-2', name: 'Artisan Dark Chocolate WBFC', category: 'Non-Coffee & Milkshake', price: 33000, isAvailable: true, description: 'Kakao murni 70% dengan cita rasa bittersweet pekat yang menenangkan.', isFavorite: true },
+      { id: 'nc-3', name: 'Red Velvet Supreme Latte', category: 'Non-Coffee & Milkshake', price: 32000, isAvailable: true, description: 'Rasa red velvet lembut layaknya kue tart dengan aroma vanilla.' },
+      { id: 'nc-4', name: 'Strawberry Thick Milkshake', category: 'Non-Coffee & Milkshake', price: 35000, isAvailable: true, description: 'Milkshake buah strawberry segar dengan es krim vanilla dan whipped cream.' },
+      // Makanan Utama
+      { id: 'food-1', name: 'Kwetiau Goreng Spesial WBFC', category: 'Makanan Utama', price: 38000, isAvailable: true, description: 'Kwetiau beras lembut dimasak wok hei dengan suwiran ayam, bakso sapi, dan telur.', isFavorite: true },
+      { id: 'food-2', name: 'Nasi Goreng Terasi Papua', category: 'Makanan Utama', price: 38000, isAvailable: true, description: 'Nasi goreng harum terasi bakar gurih khas pesisir timur, telur mata sapi dan acar.', isFavorite: true },
+      { id: 'food-3', name: 'Nasi Ayam Lengkuas Sambal Korek', category: 'Makanan Utama', price: 42000, isAvailable: true, description: 'Ayam ungkep bumbu lengkuas serundeng renyah dan sambal korek pedas gurih.' },
+      { id: 'food-4', name: 'Nasi Ayam Rica-Rica Kemangi', category: 'Makanan Utama', price: 42000, isAvailable: true, description: 'Ayam empuk bumbu rica cabe merah melimpah berpadu wangi kemangi.' },
+      { id: 'food-5', name: 'Nasi Bebek RW Khas WBFC', category: 'Makanan Utama', price: 55000, isAvailable: true, description: 'Menu legendaris bebek rempah RW khas Papua/Manado, rempah pedas jahe & lengkuas.', isFavorite: true },
+      // Snack & Dessert
+      { id: 'snack-1', name: 'Lumpia Renyah Sayur & Ayam (3 pcs)', category: 'Snack & Dessert', price: 26000, isAvailable: true, description: 'Lumpia isi rebung muda, wortel, dan ayam cincang dengan cocolan saus tauco manis.', isFavorite: true },
+      { id: 'snack-2', name: 'Pisang Goreng Waanal Gula Palem', category: 'Snack & Dessert', price: 25000, isAvailable: true, description: 'Pisang kepok manis digoreng tepung renyah berpasir ditaburi gula palem dan keju.' },
+      { id: 'snack-3', name: 'Gisei Pu Banana Crispy Khas Papua', category: 'Snack & Dessert', price: 28000, isAvailable: true, description: 'Camilan olahan pisang khas Papua disajikan dengan kental manis dan cokelat lumer.', isFavorite: true },
+      { id: 'snack-4', name: 'Bala-bala Renyah Sambal Kacang (4 pcs)', category: 'Snack & Dessert', price: 22000, isAvailable: true, description: 'Bakwan sayur khas Bandung gurih renyah disajikan bersama sambal kacang legit.' },
+      { id: 'snack-5', name: 'Gehu Pedas Jeletot Bandung (4 pcs)', category: 'Snack & Dessert', price: 22000, isAvailable: true, description: 'Tahu goreng isi tumisan sayur dan cabe rawit pedas nendang.' },
+      { id: 'snack-6', name: 'Roti Bakar Khas Papua Cokelat Keju', category: 'Snack & Dessert', price: 27000, isAvailable: true, description: 'Roti tebal panggang mentega dengan isian meses dark chocolate melimpah dan keju.' }
+    ];
+
+    // 2. DUMMY ORDERS
+    let ORDERS = [
+      {
+        id: '#WBFC-482',
+        customerName: 'Adinda',
+        tableNumber: 'Meja 03',
+        orderType: 'Dine-in',
+        time: '14:25 WIB',
+        createdAt: Date.now() - 1000 * 60 * 18,
+        status: 'Menunggu Pembayaran',
+        items: [
+          { name: 'Wanagon Aren Latte (Signature WBFC)', price: 35000, quantity: 1, variant: 'Ice / Less Sugar', notes: 'Less sugar, es sedikit' },
+          { name: 'Kwetiau Goreng Spesial WBFC', price: 38000, quantity: 1, variant: 'Pedas Sedang', notes: 'Jangan pakai tauge banyak' },
+          { name: 'Lumpia Renyah Sayur & Ayam (3 pcs)', price: 26000, quantity: 1, notes: 'Saus tauco dipisah' }
+        ],
+        subtotal: 99000,
+        isMember: false,
+        discountAmount: 0,
+        total: 99000,
+        cashierName: 'Adinda F. (Shift Pagi)'
+      },
+      {
+        id: '#WBFC-483',
+        customerName: 'Dimas Pratama',
+        tableNumber: 'Meja 07',
+        orderType: 'Dine-in',
+        time: '14:32 WIB',
+        createdAt: Date.now() - 1000 * 60 * 12,
+        status: 'Menunggu Pembayaran',
+        items: [
+          { name: 'Tolikara Single Origin V60', price: 38000, quantity: 1, variant: 'Hot V60', notes: 'Rasio 1:15' },
+          { name: 'Nasi Ayam Lengkuas Sambal Korek', price: 42000, quantity: 1, notes: 'Sambal dipisah' }
+        ],
+        subtotal: 80000,
+        isMember: true,
+        memberId: 'WBFC-VIP-089',
+        discountAmount: 8000,
+        total: 72000,
+        cashierName: 'Adinda F. (Shift Pagi)'
+      },
+      {
+        id: '#WBFC-484',
+        customerName: 'Sarah Novita',
+        tableNumber: 'Takeaway',
+        orderType: 'Takeaway',
+        time: '14:38 WIB',
+        createdAt: Date.now() - 1000 * 60 * 5,
+        status: 'Menunggu Pembayaran',
+        items: [
+          { name: 'Caramel Macchiato', price: 36000, quantity: 1, variant: 'Iced' },
+          { name: 'Pisang Goreng Waanal Gula Palem', price: 25000, quantity: 1 }
+        ],
+        subtotal: 61000,
+        isMember: false,
+        discountAmount: 0,
+        total: 61000,
+        cashierName: 'Adinda F. (Shift Pagi)'
+      },
+      // Finished History Orders
+      {
+        id: '#WBFC-480',
+        customerName: 'Kevin Sanjaya',
+        tableNumber: 'Takeaway',
+        orderType: 'Takeaway',
+        time: '14:05 WIB',
+        createdAt: Date.now() - 1000 * 60 * 40,
+        status: 'Lunas',
+        items: [
+          { name: 'Caffe Latte', price: 32000, quantity: 1 },
+          { name: 'Pisang Goreng Waanal Gula Palem', price: 25000, quantity: 1 }
+        ],
+        subtotal: 57000,
+        isMember: false,
+        discountAmount: 0,
+        total: 57000,
+        paymentMethod: 'Cash',
+        amountPaid: 100000,
+        changeAmount: 43000,
+        cashierName: 'Adinda F. (Shift Pagi)',
+        receiptNumber: 'REC-20261031-480'
+      },
+      {
+        id: '#WBFC-481',
+        customerName: 'Rizky Fauzan',
+        tableNumber: 'Meja 05',
+        orderType: 'Dine-in',
+        time: '14:15 WIB',
+        createdAt: Date.now() - 1000 * 60 * 30,
+        status: 'Lunas',
+        items: [
+          { name: 'Nasi Goreng Terasi Papua', price: 38000, quantity: 2 },
+          { name: 'Tolikara Single Origin V60', price: 38000, quantity: 1 }
+        ],
+        subtotal: 114000,
+        isMember: true,
+        memberId: 'WBFC-VIP-210',
+        discountAmount: 11400,
+        total: 102600,
+        paymentMethod: 'Debit',
+        amountPaid: 102600,
+        changeAmount: 0,
+        cashierName: 'Adinda F. (Shift Pagi)',
+        receiptNumber: 'REC-20261031-481'
+      }
+    ];
+
+    // Current State
+    let currentTab = 'queue';
+    let queueTypeFilter = 'Semua';
+    let stockCategoryFilter = 'Semua';
+    let historyMethodFilter = 'Semua';
+
+    // Payment in progress state
+    let activePaymentOrder = null;
+    let paymentIsMember = false;
+    let paymentSelectedMethod = 'Cash';
+    let paymentCashAmount = 0;
+
+    // Currency Formatter
+    function formatRupiah(num) {
+      return 'Rp ' + Number(num).toLocaleString('id-ID');
+    }
+
+    // Real-time Clock
+    function startClock() {
+      const update = () => {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB';
+        document.getElementById('header-clock').textContent = timeStr;
+      };
+      update();
+      setInterval(update, 1000);
+    }
+
+    // Toast Utility
+    function showToast(msg, type = 'success') {
+      const banner = document.getElementById('toast-banner');
+      const text = document.getElementById('toast-text');
+      const icon = document.getElementById('toast-icon');
+      
+      text.textContent = msg;
+      icon.textContent = type === 'success' ? '✓' : (type === 'error' ? '✕' : 'ℹ');
+      banner.className = `mb-4 p-3 rounded-xl border text-xs font-semibold shadow-lg transition-all flex items-center space-x-2 ${
+        type === 'success' ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-300' :
+        type === 'error' ? 'bg-rose-950/90 border-rose-500/50 text-rose-300' :
+        'bg-amber-950/90 border-amber-500/50 text-amber-300'
+      }`;
+      banner.classList.remove('hidden');
+
+      setTimeout(() => {
+        banner.classList.add('hidden');
+      }, 3500);
+    }
+
+    // Audio Chimes using Web Audio API
+    function playBeep(type = 'success') {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        if (type === 'success') {
+          osc.frequency.setValueAtTime(587.33, now);
+          osc.frequency.setValueAtTime(880, now + 0.1);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.4);
+        } else {
+          osc.frequency.setValueAtTime(440, now);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        }
+      } catch (e) {}
+    }
+
+    // Calculate & Update Metrics
+    function updateMetrics() {
+      const paidOrders = ORDERS.filter(o => o.status === 'Lunas');
+      const pendingOrders = ORDERS.filter(o => o.status === 'Menunggu Pembayaran');
+      const totalRevenue = paidOrders.reduce((sum, o) => sum + o.total, 0);
+      const outOfStockCount = MENU_ITEMS.filter(m => !m.isAvailable).length;
+
+      document.getElementById('metric-total-orders').textContent = ORDERS.length;
+      document.getElementById('metric-pending-orders').textContent = pendingOrders.length;
+      document.getElementById('queue-badge-count').textContent = pendingOrders.length;
+      document.getElementById('metric-total-revenue').textContent = formatRupiah(totalRevenue);
+      document.getElementById('metric-out-of-stock').textContent = outOfStockCount;
+
+      const stockBadge = document.getElementById('stock-badge-count');
+      if (outOfStockCount > 0) {
+        stockBadge.textContent = `${outOfStockCount} Habis`;
+        stockBadge.classList.remove('hidden');
+      } else {
+        stockBadge.classList.add('hidden');
+      }
+
+      const availableCount = MENU_ITEMS.length - outOfStockCount;
+      const elAvail = document.getElementById('stock-available-count');
+      const elOut = document.getElementById('stock-out-count');
+      if (elAvail) elAvail.textContent = `Tersedia: ${availableCount}`;
+      if (elOut) elOut.textContent = `Habis: ${outOfStockCount}`;
+    }
+
+    // Tab Navigation
+    function switchTab(tab) {
+      currentTab = tab;
+      document.getElementById('section-queue').classList.toggle('hidden', tab !== 'queue');
+      document.getElementById('section-stock').classList.toggle('hidden', tab !== 'stock');
+      document.getElementById('section-history').classList.toggle('hidden', tab !== 'history');
+
+      // Update Nav active styling
+      ['queue', 'stock', 'history'].forEach(t => {
+        const btn = document.getElementById(`nav-tab-${t}`);
+        if (t === tab) {
+          btn.className = 'flex items-center space-x-2 py-3 px-3 sm:px-5 font-bold text-xs sm:text-sm border-b-2 border-amber-500 text-amber-400 transition-all';
+        } else {
+          btn.className = 'flex items-center space-x-2 py-3 px-3 sm:px-5 font-bold text-xs sm:text-sm border-b-2 border-transparent text-neutral-400 hover:text-white transition-all';
+        }
+      });
+
+      if (tab === 'queue') renderQueue();
+      if (tab === 'stock') renderStock();
+      if (tab === 'history') renderHistory();
+    }
+
+    // Render TAB 1: Antrean Pesanan Masuk
+    function setQueueTypeFilter(type) {
+      queueTypeFilter = type;
+      ['Semua', 'Dine-in', 'Takeaway'].forEach(t => {
+        const btn = document.getElementById(`filter-type-${t}`);
+        if (t === type) {
+          btn.className = 'px-3 py-1.5 rounded-md font-bold bg-amber-500 text-neutral-950';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-md font-medium text-neutral-400 hover:text-white';
+        }
+      });
+      renderQueue();
+    }
+
+    function renderQueue() {
+      const container = document.getElementById('queue-container');
+      const query = (document.getElementById('queue-search')?.value || '').toLowerCase();
+
+      const filtered = ORDERS
+        .filter(o => o.status === 'Menunggu Pembayaran')
+        .filter(o => {
+          const matchQuery = o.customerName.toLowerCase().includes(query) ||
+                             o.id.toLowerCase().includes(query) ||
+                             o.tableNumber.toLowerCase().includes(query);
+          const matchType = queueTypeFilter === 'Semua' || o.orderType === queueTypeFilter;
+          return matchQuery && matchType;
+        });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full bg-[#15151a] border border-[#24242e] rounded-2xl p-12 text-center text-neutral-400">
+            <div class="w-12 h-12 rounded-full bg-neutral-800 mx-auto flex items-center justify-center text-xl mb-3">✓</div>
+            <h3 class="font-bold text-white text-base">Tidak Ada Pesanan Menunggu Pembayaran</h3>
+            <p class="text-xs text-neutral-400 mt-1">Semua pesanan masuk telah diselesaikan kasir.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(order => {
+        const itemsHtml = order.items.map(item => `
+          <div class="grid grid-cols-12 text-xs items-start py-1">
+            <div class="col-span-7 pr-2">
+              <span class="font-semibold text-neutral-100">${item.name}</span>
+              ${item.variant ? `<span class="block text-[10px] text-neutral-400 font-medium">${item.variant}</span>` : ''}
+              ${item.notes ? `<span class="block text-[10px] text-amber-300 italic">Note: "${item.notes}"</span>` : ''}
+            </div>
+            <div class="col-span-2 text-center font-mono font-bold text-neutral-300">${item.quantity}x</div>
+            <div class="col-span-3 text-right font-mono text-neutral-200">${formatRupiah(item.price * item.quantity)}</div>
+          </div>
+        `).join('');
+
+        return `
+          <div class="bg-[#16161c] border border-[#282835] hover:border-amber-500/40 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between">
+            <div>
+              <!-- Header -->
+              <div class="bg-[#1d1d26] px-5 py-3 border-b border-[#292936] flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <span class="font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded text-xs">${order.id}</span>
+                  <span class="px-2 py-0.5 rounded text-xs font-semibold ${order.orderType === 'Dine-in' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30' : 'bg-purple-500/10 text-purple-400 border border-purple-500/30'}">
+                    ${order.tableNumber}
+                  </span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <span class="text-xs text-neutral-400 font-mono">${order.time}</span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">Menunggu</span>
+                </div>
+              </div>
+
+              <!-- Customer info -->
+              <div class="px-5 py-2.5 bg-[#181820] border-b border-[#252530] flex items-center justify-between text-xs">
+                <div>
+                  <span class="text-neutral-400">Pelanggan:</span>
+                  <strong class="text-white ml-1">${order.customerName}</strong>
+                </div>
+                ${order.isMember ? '<span class="text-amber-400 font-semibold text-[11px]">★ Member WBFC (Diskon 10%)</span>' : ''}
+              </div>
+
+              <!-- Item details -->
+              <div class="p-5 divide-y divide-[#22222d]">
+                <div class="pb-1 text-[10px] font-bold text-neutral-400 uppercase grid grid-cols-12">
+                  <span class="col-span-7">Item Menu & Catatan</span>
+                  <span class="col-span-2 text-center">Qty</span>
+                  <span class="col-span-3 text-right">Harga</span>
+                </div>
+                <div class="pt-1.5 space-y-1">
+                  ${itemsHtml}
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer & Actions -->
+            <div class="bg-[#121217] p-5 border-t border-[#252530] space-y-3">
+              <div class="space-y-1 text-xs text-neutral-400">
+                <div class="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span class="font-mono text-neutral-200">${formatRupiah(order.subtotal)}</span>
+                </div>
+                ${order.discountAmount > 0 ? `
+                  <div class="flex justify-between text-emerald-400">
+                    <span>Diskon Member (10%):</span>
+                    <span class="font-mono">-${formatRupiah(order.discountAmount)}</span>
+                  </div>
+                ` : ''}
+                <div class="flex justify-between text-base font-extrabold text-white pt-1 border-t border-[#23232c]">
+                  <span>Total Tagihan:</span>
+                  <span class="font-mono text-xl text-amber-400">${formatRupiah(order.total)}</span>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 pt-1">
+                <button onclick="cancelOrder('${order.id}')" class="py-2 px-3 rounded-xl bg-rose-950/30 hover:bg-rose-900/40 border border-rose-800/40 text-rose-300 text-xs font-semibold">
+                  Batalkan
+                </button>
+                <button onclick="openPaymentModal('${order.id}')" class="col-span-2 py-2 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 text-white font-bold text-xs shadow-md">
+                  💳 Proses Pembayaran (Lunas)
+                </button>
+              </div>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Cancel Order
+    function cancelOrder(orderId) {
+      const order = ORDERS.find(o => o.id === orderId);
+      if (order && confirm(`Batalkan pesanan ${order.id} (${order.customerName})?`)) {
+        order.status = 'Dibatalkan';
+        playBeep('alert');
+        showToast(`Pesanan ${order.id} dibatalkan`, 'error');
+        updateMetrics();
+        renderQueue();
+      }
+    }
+
+    // Simulate New Incoming Order
+    function simulateNewIncomingOrder() {
+      const code = '#WBFC-' + Math.floor(486 + Math.random() * 50);
+      const names = ['Fauziah Adinda', 'Rangga Saputra', 'Clarissa Devina', 'Bagus Wicaksono', 'Nadia Putri'];
+      const tables = ['Meja 04', 'Meja 06', 'Meja 08', 'Takeaway'];
+      const customer = names[Math.floor(Math.random() * names.length)];
+      const table = tables[Math.floor(Math.random() * tables.length)];
+
+      const newOrder = {
+        id: code,
+        customerName: customer,
+        tableNumber: table,
+        orderType: table === 'Takeaway' ? 'Takeaway' : 'Dine-in',
+        time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
+        createdAt: Date.now(),
+        status: 'Menunggu Pembayaran',
+        items: [
+          { name: 'Wanagon Aren Latte (Signature WBFC)', price: 35000, quantity: 2, variant: 'Ice / Normal' },
+          { name: 'Kwetiau Goreng Spesial WBFC', price: 38000, quantity: 1, notes: 'Pedas sedang' }
+        ],
+        subtotal: 108000,
+        isMember: false,
+        discountAmount: 0,
+        total: 108000,
+        cashierName: 'Adinda F. (Shift Pagi)'
+      };
+
+      ORDERS.unshift(newOrder);
+      playBeep('success');
+      showToast(`Pesanan baru masuk: ${code} (${customer})!`, 'success');
+      updateMetrics();
+      renderQueue();
+    }
+
+    // Render TAB 2: Kelola Stok & Menu
+    const CATEGORIES = ['Semua', 'Papua Single Origin', 'Espresso Based', 'Non-Coffee & Milkshake', 'Makanan Utama', 'Snack & Dessert'];
+
+    function renderStockCategories() {
+      const container = document.getElementById('stock-category-pills');
+      container.innerHTML = CATEGORIES.map(cat => {
+        const count = cat === 'Semua' ? MENU_ITEMS.length : MENU_ITEMS.filter(m => m.category === cat).length;
+        const isSel = stockCategoryFilter === cat;
+        return `
+          <button onclick="setStockCategory('${cat}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all ${
+            isSel ? 'bg-amber-500 text-neutral-950 font-bold shadow' : 'bg-[#121217] text-neutral-300 hover:text-white border border-[#2b2b38]'
+          }">
+            <span>${cat}</span>
+            <span class="text-[10px] px-1.5 py-0.2 rounded-full font-mono ${isSel ? 'bg-neutral-900/30' : 'bg-neutral-800 text-neutral-400'}">${count}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function setStockCategory(cat) {
+      stockCategoryFilter = cat;
+      renderStockCategories();
+      renderStock();
+    }
+
+    function renderStock() {
+      renderStockCategories();
+      const grid = document.getElementById('stock-menu-grid');
+      const query = (document.getElementById('stock-search')?.value || '').toLowerCase();
+
+      const items = MENU_ITEMS.filter(item => {
+        const matchCat = stockCategoryFilter === 'Semua' || item.category === stockCategoryFilter;
+        const matchQ = item.name.toLowerCase().includes(query) || item.description.toLowerCase().includes(query);
+        return matchCat && matchQ;
+      });
+
+      grid.innerHTML = items.map(item => `
+        <div class="border rounded-xl p-4 transition-all flex flex-col justify-between ${
+          item.isAvailable ? 'bg-[#16161c] border-[#292936]' : 'bg-[#1b1414] border-rose-900/40'
+        }">
+          <div>
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-neutral-800 text-neutral-400 border border-neutral-700">
+                ${item.category}
+              </span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                item.isAvailable ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse'
+              }">
+                ${item.isAvailable ? '✓ Tersedia' : '✕ Habis'}
+              </span>
+            </div>
+            <h3 class="font-bold text-white text-sm line-clamp-1 mb-1">${item.name}</h3>
+            <p class="text-xs text-neutral-400 line-clamp-2 leading-relaxed mb-3">${item.description}</p>
+          </div>
+
+          <div class="pt-3 border-t border-[#23232c] flex items-center justify-between">
+            <span class="font-mono font-bold text-amber-400 text-sm">${formatRupiah(item.price)}</span>
+            
+            <!-- Toggle Switch -->
+            <button
+              onclick="toggleStockItem('${item.id}')"
+              class="relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                item.isAvailable ? 'bg-emerald-600' : 'bg-rose-700'
+              }"
+            >
+              <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200 ease-in-out ${
+                item.isAvailable ? 'translate-x-6' : 'translate-x-0'
+              }"></span>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function toggleStockItem(itemId) {
+      const item = MENU_ITEMS.find(m => m.id === itemId);
+      if (item) {
+        item.isAvailable = !item.isAvailable;
+        playBeep('alert');
+        showToast(`Stok "${item.name}" diubah menjadi: ${item.isAvailable ? 'Tersedia' : 'Habis'}`, item.isAvailable ? 'success' : 'error');
+        updateMetrics();
+        renderStock();
+      }
+    }
+
+    function resetAllStockToAvailable() {
+      MENU_ITEMS.forEach(m => m.isAvailable = true);
+      playBeep('success');
+      showToast('Semua menu telah diatur kembali menjadi [Tersedia]', 'success');
+      updateMetrics();
+      renderStock();
+    }
+
+    // Render TAB 3: Riwayat Transaksi Lunas
+    function setHistoryMethodFilter(method) {
+      historyMethodFilter = method;
+      ['Semua', 'Cash', 'QRIS', 'Debit'].forEach(m => {
+        const btn = document.getElementById(`hfilter-${m}`);
+        if (m === method) {
+          btn.className = 'px-3 py-1 rounded-md font-bold bg-amber-500 text-neutral-950';
+        } else {
+          btn.className = 'px-3 py-1 rounded-md font-medium text-neutral-400 hover:text-white';
+        }
+      });
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const tbody = document.getElementById('history-table-body');
+      const query = (document.getElementById('history-search')?.value || '').toLowerCase();
+
+      const paid = ORDERS
+        .filter(o => o.status === 'Lunas')
+        .filter(o => {
+          const matchQ = o.customerName.toLowerCase().includes(query) || o.id.toLowerCase().includes(query);
+          const matchM = historyMethodFilter === 'Semua' || o.paymentMethod === historyMethodFilter;
+          return matchQ && matchM;
+        });
+
+      if (paid.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-8 text-center text-neutral-400">
+              Belum ada riwayat transaksi lunas yang sesuai filter.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = paid.map(order => `
+        <tr class="hover:bg-[#1b1b22] transition-colors">
+          <td class="py-3 px-4 font-mono font-bold text-amber-400">
+            <div>${order.id}</div>
+            <div class="text-[10px] text-neutral-400 font-normal">${order.time}</div>
+          </td>
+          <td class="py-3 px-4">
+            <div class="font-bold text-white">${order.customerName}</div>
+            <div class="text-[10px] text-neutral-400">${order.tableNumber}</div>
+          </td>
+          <td class="py-3 px-4 max-w-xs truncate text-neutral-300">
+            ${order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}
+          </td>
+          <td class="py-3 px-4">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+              order.paymentMethod === 'Cash' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+              order.paymentMethod === 'QRIS' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30' :
+              'bg-purple-500/15 text-purple-400 border border-purple-500/30'
+            }">
+              ${order.paymentMethod || 'Lunas'}
+            </span>
+          </td>
+          <td class="py-3 px-4 font-mono text-emerald-400">
+            ${order.discountAmount > 0 ? `-${formatRupiah(order.discountAmount)}` : '-'}
+          </td>
+          <td class="py-3 px-4 text-right font-mono font-bold text-emerald-400">
+            ${formatRupiah(order.total)}
+          </td>
+          <td class="py-3 px-4 text-center">
+            <button onclick="viewReceipt('${order.id}')" class="px-2.5 py-1 rounded bg-[#242430] hover:bg-amber-500 hover:text-neutral-950 text-neutral-200 border border-[#383848] text-[11px] font-semibold transition-all">
+              🖨️ Cetak Struk
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // ==================== PAYMENT MODAL LOGIC ====================
+    function openPaymentModal(orderId) {
+      const order = ORDERS.find(o => o.id === orderId);
+      if (!order) return;
+      activePaymentOrder = order;
+      paymentIsMember = order.isMember || false;
+      paymentSelectedMethod = 'Cash';
+
+      document.getElementById('pay-modal-order-meta').textContent = `${order.id} • ${order.customerName} • ${order.tableNumber}`;
+
+      // Render items in payment modal
+      const itemsContainer = document.getElementById('pay-modal-items-list');
+      itemsContainer.innerHTML = order.items.map(i => `
+        <div class="flex justify-between py-0.5 text-xs">
+          <span><b class="text-amber-400">${i.quantity}x</b> ${i.name}</span>
+          <span class="font-mono text-neutral-300">${formatRupiah(i.price * i.quantity)}</span>
+        </div>
+      `).join('');
+
+      updatePaymentModalCalculations();
+      setPaymentMethod('Cash');
+      document.getElementById('payment-modal').classList.remove('hidden');
+    }
+
+    function closePaymentModal() {
+      document.getElementById('payment-modal').classList.add('hidden');
+      activePaymentOrder = null;
+    }
+
+    function togglePaymentMember() {
+      paymentIsMember = !paymentIsMember;
+      updatePaymentModalCalculations();
+    }
+
+    function updatePaymentModalCalculations() {
+      if (!activePaymentOrder) return;
+      const subtotal = activePaymentOrder.subtotal;
+      const discount = paymentIsMember ? Math.round(subtotal * 0.1) : 0;
+      const finalTotal = Math.max(0, subtotal - discount);
+
+      // Toggle visual
+      const toggleCircle = document.getElementById('pay-member-toggle-circle');
+      const toggleBtn = document.getElementById('pay-member-toggle-btn');
+      if (paymentIsMember) {
+        toggleBtn.classList.add('bg-amber-500');
+        toggleBtn.classList.remove('bg-neutral-700');
+        toggleCircle.classList.add('translate-x-6');
+        toggleCircle.classList.remove('translate-x-0');
+      } else {
+        toggleBtn.classList.remove('bg-amber-500');
+        toggleBtn.classList.add('bg-neutral-700');
+        toggleCircle.classList.remove('translate-x-6');
+        toggleCircle.classList.add('translate-x-0');
+      }
+
+      document.getElementById('pay-calc-subtotal').textContent = formatRupiah(subtotal);
+      const discountRow = document.getElementById('pay-calc-discount-row');
+      if (discount > 0) {
+        discountRow.classList.remove('hidden');
+        document.getElementById('pay-calc-discount').textContent = `-${formatRupiah(discount)}`;
+      } else {
+        discountRow.classList.add('hidden');
+      }
+      document.getElementById('pay-calc-final-total').textContent = formatRupiah(finalTotal);
+
+      // Presets for cash
+      const presetsContainer = document.getElementById('pm-cash-presets');
+      const presets = [finalTotal, 50000, 100000, 200000].filter(p => p >= finalTotal);
+      presetsContainer.innerHTML = presets.map((amt, idx) => `
+        <button type="button" onclick="setCashInputAmount(${amt})" class="px-2 py-1 rounded bg-[#1c1c24] border border-[#2f2f3d] text-[10px] font-mono hover:bg-neutral-800">
+          ${idx === 0 ? 'Uang Pas' : formatRupiah(amt)}
+        </button>
+      `).join('');
+
+      setCashInputAmount(finalTotal);
+    }
+
+    function setPaymentMethod(method) {
+      paymentSelectedMethod = method;
+      ['Cash', 'QRIS', 'Debit'].forEach(m => {
+        const btn = document.getElementById(`pm-btn-${m}`);
+        if (m === method) {
+          btn.className = 'p-3 rounded-xl border text-center font-bold bg-amber-500/15 border-amber-500 text-amber-400';
+        } else {
+          btn.className = 'p-3 rounded-xl border text-center font-medium bg-[#121217] border-[#292936] text-neutral-400 hover:text-white';
+        }
+      });
+
+      document.getElementById('pm-cash-details').classList.toggle('hidden', method !== 'Cash');
+      document.getElementById('pm-qris-details').classList.toggle('hidden', method !== 'QRIS');
+      document.getElementById('pm-debit-details').classList.toggle('hidden', method !== 'Debit');
+    }
+
+    function setCashInputAmount(amt) {
+      paymentCashAmount = amt;
+      const inp = document.getElementById('pm-cash-input');
+      if (inp) inp.value = amt;
+      onCashInputChanged(amt);
+    }
+
+    function onCashInputChanged(val) {
+      const parsed = parseInt(val, 10) || 0;
+      paymentCashAmount = parsed;
+      const subtotal = activePaymentOrder.subtotal;
+      const discount = paymentIsMember ? Math.round(subtotal * 0.1) : 0;
+      const finalTotal = Math.max(0, subtotal - discount);
+      const change = Math.max(0, parsed - finalTotal);
+
+      const changeEl = document.getElementById('pm-cash-change');
+      const submitBtn = document.getElementById('pay-confirm-submit-btn');
+
+      if (parsed >= finalTotal) {
+        changeEl.textContent = formatRupiah(change);
+        changeEl.className = 'font-mono font-bold text-emerald-400 text-sm';
+        submitBtn.disabled = false;
+        submitBtn.className = 'px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 text-white font-bold shadow-lg';
+      } else {
+        changeEl.textContent = `Kurang ${formatRupiah(finalTotal - parsed)}`;
+        changeEl.className = 'font-mono font-bold text-rose-400 text-sm';
+        if (paymentSelectedMethod === 'Cash') {
+          submitBtn.disabled = true;
+          submitBtn.className = 'px-5 py-2 rounded-xl bg-neutral-800 text-neutral-500 cursor-not-allowed';
+        }
+      }
+    }
+
+    function confirmPaymentAndFinish() {
+      if (!activePaymentOrder) return;
+      const subtotal = activePaymentOrder.subtotal;
+      const discount = paymentIsMember ? Math.round(subtotal * 0.1) : 0;
+      const finalTotal = Math.max(0, subtotal - discount);
+
+      activePaymentOrder.isMember = paymentIsMember;
+      activePaymentOrder.discountAmount = discount;
+      activePaymentOrder.total = finalTotal;
+      activePaymentOrder.status = 'Lunas';
+      activePaymentOrder.paymentMethod = paymentSelectedMethod;
+      activePaymentOrder.amountPaid = paymentSelectedMethod === 'Cash' ? paymentCashAmount : finalTotal;
+      activePaymentOrder.changeAmount = paymentSelectedMethod === 'Cash' ? Math.max(0, paymentCashAmount - finalTotal) : 0;
+      activePaymentOrder.receiptNumber = `REC-${activePaymentOrder.id.replace('#', '')}`;
+      activePaymentOrder.paymentTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+
+      const orderToPrint = { ...activePaymentOrder };
+      closePaymentModal();
+      playBeep('success');
+      showToast(`Pembayaran ${orderToPrint.id} berhasil (${orderToPrint.paymentMethod})!`, 'success');
+      updateMetrics();
+      renderQueue();
+      viewReceipt(orderToPrint.id);
+    }
+
+    // ==================== RECEIPT MODAL LOGIC ====================
+    function viewReceipt(orderId) {
+      const order = ORDERS.find(o => o.id === orderId);
+      if (!order) return;
+
+      document.getElementById('receipt-meta').innerHTML = `
+        <div class="flex justify-between"><span>No. Struk:</span><b>${order.receiptNumber || 'REC-' + order.id.replace('#', '')}</b></div>
+        <div class="flex justify-between"><span>Waktu:</span><span>${order.time} | 31 Okt 2026</span></div>
+        <div class="flex justify-between"><span>Kasir:</span><span>${order.cashierName}</span></div>
+        <div class="flex justify-between"><span>Pelanggan:</span><b>${order.customerName}</b></div>
+        <div class="flex justify-between"><span>Tipe / Meja:</span><b>${order.tableNumber}</b></div>
+        ${order.isMember ? '<div class="flex justify-between"><span>Member:</span><b>WBFC CLUB (Diskon 10%)</b></div>' : ''}
+      `;
+
+      document.getElementById('receipt-items-table').innerHTML = order.items.map(item => `
+        <div class="grid grid-cols-12">
+          <div class="col-span-7 pr-1">
+            <div class="font-bold text-neutral-900">${item.name}</div>
+            ${item.variant ? `<div class="text-[9px] text-neutral-600">${item.variant}</div>` : ''}
+          </div>
+          <div class="col-span-2 text-center font-bold">${item.quantity}</div>
+          <div class="col-span-3 text-right font-bold">${formatRupiah(item.price * item.quantity).replace('Rp', '').trim()}</div>
+        </div>
+      `).join('');
+
+      document.getElementById('receipt-totals').innerHTML = `
+        <div class="flex justify-between"><span>Subtotal:</span><span>${formatRupiah(order.subtotal)}</span></div>
+        ${order.discountAmount > 0 ? `<div class="flex justify-between font-bold"><span>Diskon Member (10%):</span><span>-${formatRupiah(order.discountAmount)}</span></div>` : ''}
+        <div class="flex justify-between font-extrabold text-xs pt-1 border-t border-neutral-300"><span>TOTAL:</span><span>${formatRupiah(order.total)}</span></div>
+        <div class="flex justify-between pt-1"><span>Metode:</span><b>${order.paymentMethod || 'TUNAI'}</b></div>
+        ${order.paymentMethod === 'Cash' ? `
+          <div class="flex justify-between"><span>Bayar Tunai:</span><span>${formatRupiah(order.amountPaid || order.total)}</span></div>
+          <div class="flex justify-between font-bold"><span>Kembalian:</span><span>${formatRupiah(order.changeAmount || 0)}</span></div>
+        ` : ''}
+      `;
+
+      document.getElementById('receipt-modal').classList.remove('hidden');
+    }
+
+    function closeReceiptModal() {
+      document.getElementById('receipt-modal').classList.add('hidden');
+    }
+
+    // Initialize application on load
+    window.addEventListener('DOMContentLoaded', () => {
+      startClock();
+      updateMetrics();
+      renderQueue();
+    });
+  </script>
+</body>
+</html>

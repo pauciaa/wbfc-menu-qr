@@ -1,0 +1,6 @@
+{
+  "name": "Waanal Brothers Food & Coffee - Digital Menu QR",
+  "description": "Katalog Menu Digital Berbasis QR Code untuk Waanal Brothers Food & Coffee (WBFC) Bandung dengan Kopi Papua V60, Espresso, Makanan Utama, & Kasir Checkout.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

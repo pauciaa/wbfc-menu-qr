@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Waanal Brothers Food & Coffee - Digital Menu QR</title>
+  <meta name="description" content="Katalog Menu Digital Berbasis QR Code Waanal Brothers Food & Coffee Bandung.">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            charcoal: '#121212',
+            brandGold: '#F59E0B',
+            brandRed: '#DC2626'
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- QRCode CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #121212; color: #F4F4F5; }
+    h1, h2, h3, .font-display { font-family: 'Outfit', sans-serif; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-[#121212] text-zinc-100 min-h-screen pb-24 antialiased selection:bg-amber-500 selection:text-black">
+
+  <!-- TOP HEADER -->
+  <header class="sticky top-0 z-30 bg-[#121212]/95 backdrop-blur-md border-b border-zinc-800">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-zinc-950 font-black shadow-lg shadow-amber-500/20">
+          <i data-lucide="coffee" class="w-5 h-5 stroke-[2.5]"></i>
+        </div>
+        <div>
+          <h1 class="text-sm sm:text-base font-extrabold tracking-tight text-white uppercase font-display leading-tight">
+            WAANAL BROTHERS
+          </h1>
+          <p class="text-[11px] text-zinc-400 flex items-center gap-1">
+            <i data-lucide="map-pin" class="w-3 h-3 text-amber-500 inline"></i>
+            Jl. Batununggal Indah I No. 66, Bandung
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <div id="table-badge" onclick="promptChangeTable()" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all active:scale-95">
+          <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
+          <span id="table-number-text">Meja 43</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- SEARCH & CATEGORY BAR -->
+  <div class="sticky top-[58px] z-20 bg-[#121212]/95 backdrop-blur-md border-b border-zinc-800 pt-2 pb-2.5">
+    <div class="max-w-4xl mx-auto px-4 space-y-2">
+      <!-- Search & Tasting Note Filter -->
+      <div class="flex gap-2">
+        <div class="relative flex-1">
+          <input id="search-input" type="text" oninput="handleSearch(this.value)" placeholder="Cari V60, espresso, nasgor, snack..." class="w-full pl-9 pr-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"></i>
+        </div>
+        <select id="tasting-select" onchange="handleTastingFilter(this.value)" class="bg-zinc-900 text-xs font-medium text-amber-400 border border-zinc-800 rounded-xl px-2.5 py-2 focus:outline-none">
+          <option value="">Filter Tasting Notes Papua</option>
+          <option value="Caramel">Caramel</option>
+          <option value="Brown Sugar">Brown Sugar</option>
+          <option value="Cinnamon">Cinnamon</option>
+          <option value="Black Tea">Black Tea / Nutty</option>
+          <option value="Black Currant">Black Currant</option>
+          <option value="Dark Chocolate">Dark Chocolate</option>
+        </select>
+      </div>
+
+      <!-- Categories Scrollable Tabs -->
+      <div id="category-tabs" class="flex gap-1.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CATALOG CONTENT -->
+  <main class="max-w-4xl mx-auto px-4 py-4">
+    <div id="menu-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+      <!-- Cards rendered by JS -->
+    </div>
+  </main>
+
+  <!-- FLOATING CART BAR -->
+  <div id="floating-cart" class="fixed bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black via-black/95 to-transparent z-40 hidden">
+    <div class="max-w-md mx-auto">
+      <button onclick="openCartModal()" class="w-full py-3.5 px-4 rounded-2xl bg-red-600 hover:bg-red-500 active:scale-[0.98] text-white font-bold flex items-center justify-between shadow-xl shadow-red-950 transition-all">
+        <div class="flex items-center gap-2">
+          <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+          <span id="cart-btn-label">Lihat Keranjang (0 item)</span>
+        </div>
+        <span id="cart-btn-total" class="font-extrabold tabular-nums">Rp 0</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL DETAIL / KUSTOMISASI -->
+  <div id="modal-detail" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm hidden">
+    <div class="w-full sm:max-w-md bg-zinc-900 border border-zinc-800 rounded-t-3xl sm:rounded-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="relative h-44 w-full bg-zinc-950">
+        <img id="detail-img" src="" alt="Menu" class="w-full h-full object-cover">
+        <button onclick="closeDetailModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/70 text-white flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="p-4 overflow-y-auto space-y-3.5 flex-1">
+        <div>
+          <h2 id="detail-name" class="text-lg font-extrabold text-white font-display"></h2>
+          <p id="detail-desc" class="text-xs text-zinc-400 mt-1"></p>
+        </div>
+        <!-- Papua Storytelling Section -->
+        <div id="detail-story-box" class="p-3 rounded-xl bg-amber-950/20 border border-amber-500/30 text-xs hidden">
+          <span class="font-bold text-amber-400 block mb-1">Story Kopi Pedalaman Papua</span>
+          <p id="detail-story" class="italic text-zinc-300 mb-1.5"></p>
+          <div id="detail-meta-box" class="text-[11px] text-amber-300 font-semibold space-y-0.5"></div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-zinc-800/60 text-xs text-zinc-300">
+          <span class="text-zinc-400 font-semibold block mb-0.5">Komposisi:</span>
+          <p id="detail-comp"></p>
+        </div>
+        <!-- Temperature variant -->
+        <div id="detail-temp-box" class="space-y-1.5 hidden">
+          <label class="text-xs font-bold text-zinc-300 uppercase tracking-wider block">Penyajian Suhu</label>
+          <div class="grid grid-cols-2 gap-2" id="detail-temp-options"></div>
+        </div>
+        <!-- Add Ons -->
+        <div id="detail-addons-box" class="space-y-1.5">
+          <label class="text-xs font-bold text-zinc-300 uppercase tracking-wider block">Add-On Tambahan</label>
+          <div id="detail-addons-list" class="space-y-1.5"></div>
+        </div>
+        <!-- Note -->
+        <div>
+          <label class="text-xs font-bold text-zinc-300 uppercase tracking-wider block mb-1">Catatan Khusus</label>
+          <input id="detail-note" type="text" placeholder="Contoh: Sedikit gula, tanpa es..." class="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-xs text-white">
+        </div>
+      </div>
+      <div class="p-4 bg-zinc-950 border-t border-zinc-800 flex items-center gap-3">
+        <div class="flex items-center bg-zinc-800 rounded-xl px-2 py-1 border border-zinc-700">
+          <button onclick="adjustDetailQty(-1)" class="px-2 text-zinc-300 font-bold">-</button>
+          <span id="detail-qty" class="w-6 text-center text-sm font-bold">1</span>
+          <button onclick="adjustDetailQty(1)" class="px-2 text-zinc-300 font-bold">+</button>
+        </div>
+        <button onclick="confirmAddToCart()" class="flex-1 py-3 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs sm:text-sm flex justify-between">
+          <span>Tambah ke Keranjang</span>
+          <span id="detail-total-price">Rp 0</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL KERANJANG & CHECKOUT -->
+  <div id="modal-cart" class="fixed inset-0 z-50 flex justify-end bg-black/80 backdrop-blur-sm hidden">
+    <div class="w-full sm:max-w-md bg-zinc-900 border-l border-zinc-800 h-full flex flex-col shadow-2xl">
+      <div class="p-4 bg-zinc-950 border-b border-zinc-800 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <i data-lucide="shopping-bag" class="w-5 h-5 text-amber-500"></i>
+          <div>
+            <h2 class="text-base font-bold text-white">Keranjang Pesanan</h2>
+            <span id="cart-header-table" class="text-xs text-amber-400">Meja 43</span>
+          </div>
+        </div>
+        <button onclick="closeCartModal()" class="w-8 h-8 rounded-lg bg-zinc-800 text-zinc-400 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div id="cart-items-container" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+      <div class="p-4 bg-zinc-950 border-t border-zinc-800 space-y-3">
+        <div class="space-y-2">
+          <input id="customer-name" type="text" placeholder="Nama Pelanggan (Wajib)" class="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white">
+          <input id="customer-phone" type="tel" placeholder="Nomor WhatsApp (Opsional)" class="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-white">
+        </div>
+        <div class="flex justify-between text-sm font-bold text-white pt-2 border-t border-zinc-800">
+          <span>Total Bayar (inc. PB1 10%)</span>
+          <span id="cart-grand-total" class="text-amber-400 font-extrabold tabular-nums">Rp 0</span>
+        </div>
+        <button onclick="processCheckout()" class="w-full py-3.5 bg-red-600 hover:bg-red-500 text-white font-bold text-sm rounded-xl flex items-center justify-between px-4 shadow-lg">
+          <span>Bayar di Kasir</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL SUKSES DENGAN QR KASIR -->
+  <div id="modal-success" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md hidden">
+    <div class="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-3xl p-5 text-center space-y-3">
+      <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
+        <i data-lucide="check-circle" class="w-7 h-7"></i>
+      </div>
+      <h3 class="text-base font-bold text-white">Pesanan Terkirim ke Kasir!</h3>
+      <div class="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+        <span class="text-[11px] text-amber-400 font-bold block">Kode Transaksi Kasir:</span>
+        <span id="success-code" class="text-xl font-black text-white font-mono"></span>
+      </div>
+      <div class="p-3 bg-white rounded-xl inline-block shadow-inner">
+        <canvas id="success-qr-canvas"></canvas>
+      </div>
+      <p class="text-xs text-zinc-300">Tunjukkan QR Code ini kepada Kasir WBFC Bandung di Jl. Batununggal Indah I No. 66.</p>
+      <button onclick="resetOrderFlow()" class="w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold rounded-xl">
+        Buat Pesanan Baru
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // DATA MENU REAL WBFC BANDUNG
+    const MENU_DATA = [
+      // A. KOPI SINGLE ORIGIN PAPUA
+      { id: 'tolikara-v60', name: 'Tolikara V60', category: 'papua-v60', price: 36000, tastingNotes: ['Caramel'], story: '100% Arabika lereng Pegunungan Tolikara Papua (1.850-2.050 mdpl). Full washed dengan manis karamel alami.', composition: 'Single Origin Arabica Tolikara (15g), Manual Brew V60 Rasio 1:15.', image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&q=80', badge: '100% Kopi Papua', isAvailable: true, temps: ['Hot', 'Iced Japanese'] },
+      { id: 'oksibil-v60', name: 'Oksibil V60', category: 'papua-v60', price: 36000, tastingNotes: ['Brown Sugar'], story: 'Kopi Arabika Pegunungan Bintang Oksibil (1.900-2.100 mdpl). Honey process dengan rasa brown sugar hangat.', composition: 'Single Origin Arabica Oksibil (15g), Hario V60.', image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80', badge: '100% Kopi Papua', isAvailable: true, temps: ['Hot', 'Iced Japanese'] },
+      { id: 'okbab-v60', name: 'Okbab V60', category: 'papua-v60', price: 38000, tastingNotes: ['Cinnamon'], story: 'Arabika distrik Okbab terpencil di Pegunungan Bintang. Natural process aroma kayu manis eksotis.', composition: 'Single Origin Arabica Okbab Papua (15g), Manual Brew V60.', image: 'https://images.unsplash.com/photo-1511920170033-f8396924c348?w=800&q=80', badge: '100% Kopi Papua', isAvailable: true, temps: ['Hot', 'Iced Japanese'] },
+      { id: 'megapura-v60', name: 'Megapura V60', category: 'papua-v60', price: 36000, tastingNotes: ['Black Tea, Nutty'], story: 'Arabika Lembah Baliem Jayawijaya. Seduhan floral seperti teh hitam berpadu gurih kacang.', composition: 'Single Origin Megapura Wamena (15g), Paper Filter V60.', image: 'https://images.unsplash.com/photo-1498804103079-a6351b050096?w=800&q=80', badge: '100% Kopi Papua', isAvailable: true, temps: ['Hot', 'Iced Japanese'] },
+      { id: 'tangma-v60', name: 'Tangma V60', category: 'papua-v60', price: 38000, tastingNotes: ['Black Currant'], story: 'Arabika Tangma Yahukimo. Fruity segar dengan sentuhan rasa buah black currant alami.', composition: 'Single Origin Arabica Tangma (15g), V60 Pour Over.', image: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=800&q=80', badge: '100% Kopi Papua', isAvailable: true, temps: ['Hot', 'Iced Japanese'] },
+      { id: 'okhika-v60', name: 'Okhika V60', category: 'papua-v60', price: 38000, tastingNotes: ['Brown Sugar & Dark Chocolate'], story: 'Arabika Okhika Pegunungan Bintang. Rasa gula kelapa dan dark chocolate kaya.', composition: 'Single Origin Okhika Papua (15g), Seduh Presisi.', image: 'https://images.unsplash.com/photo-1509785307050-d4066910ec1e?w=800&q=80', badge: '100% Kopi Papua', isAvailable: false, temps: ['Hot', 'Iced Japanese'] },
+
+      // B. ESPRESSO BASED KOPI
+      { id: 'espresso-core', name: 'Espresso', category: 'espresso', price: 20000, description: 'Ekstraksi mesin espresso tekanan 9 bar (Single 20-30ml / Ristretto / Double 40-50ml).', composition: 'Biji kopi blend pilihan, ekstraksi mesin espresso.', image: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=800&q=80', isAvailable: true },
+      { id: 'black-coffee', name: 'Black Coffee (Americano / Long Black)', category: 'espresso', price: 24000, description: 'Double espresso & air mineral bersuhu pas (Hot / Iced).', composition: 'Double espresso (40ml) + Air mineral (160ml).', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&q=80', isAvailable: true },
+      { id: 'cappuccino', name: 'Cappuccino', category: 'espresso', price: 29000, description: 'Hot: Single espresso, fresh milk foam tebal, brown sugar stick | Iced: 2 double espresso, simple syrup, full cream (shake).', composition: 'Espresso, steamed fresh milk microfoam tebal, brown sugar.', image: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=800&q=80', badge: 'Best Seller', isAvailable: true },
+      { id: 'cappuccino-float', name: 'Cappuccino Float Iced', category: 'espresso', price: 34000, description: 'Double espresso, es batu, susu full cream, simple syrup (blended) + 1 scoop ice cream.', composition: 'Double espresso, full cream blended + 1 scoop vanilla ice cream.', image: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=800&q=80', badge: 'Best Seller', isAvailable: true },
+      { id: 'latte', name: 'Caffe Latte', category: 'espresso', price: 29000, description: 'Hot: Single espresso, foam tipis | Iced: Double espresso, simple syrup, full cream (pouring).', composition: 'Espresso, steamed fresh milk halus tipis.', image: 'https://images.unsplash.com/photo-1534778101976-62847782c213?w=800&q=80', isAvailable: true },
+      { id: 'magic', name: 'Magic Coffee', category: 'espresso', price: 32000, description: 'Hot: Double ristretto, foam tipis | Iced: Double ristretto, full cream.', composition: 'Double ristretto ekstraksi awal + fresh milk.', image: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=800&q=80', isAvailable: true },
+      { id: 'mochacino', name: 'Mochacino', category: 'espresso', price: 32000, description: 'Espresso, bubuk coklat Belanda, fresh milk, white sugar.', composition: 'Espresso, dark cocoa Belanda, fresh milk.', image: 'https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?w=800&q=80', isAvailable: true },
+      { id: 'creme-brulee-hot', name: 'Creme Brulee Hot', category: 'espresso', price: 35000, description: 'Syrup hazelnut, single espresso, fresh milk steam foam tebal + gula dibakar caramel torch.', composition: 'Espresso, hazelnut, steamed milk foam, karamelisasi gula torch.', image: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=800&q=80', badge: 'Signature', isAvailable: true },
+      { id: 'coffee-lemon', name: 'Coffee Lemon', category: 'espresso', price: 28000, description: 'Espresso, lemon syrup segar, sugar (shaken for iced).', composition: 'Espresso, lemon juice syrup, sugar, es batu.', image: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=800&q=80', isAvailable: true },
+      { id: 'affogato', name: 'Affogato', category: 'espresso', price: 28000, description: 'Single espresso & 2 scoop ice cream vanilla disajikan terpisah.', composition: 'Single shot espresso panas + 2 scoop vanilla ice cream.', image: 'https://images.unsplash.com/photo-1594998893017-36147cbcae05?w=800&q=80', isAvailable: true },
+      { id: 'caramel-latte-iced', name: 'Caramel Latte Iced', category: 'espresso', price: 33000, description: 'Syrup caramel, double espresso, full cream, garnish caramel.', composition: 'Double espresso, syrup caramel, full cream, caramel sauce.', image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=800&q=80', isAvailable: true },
+      { id: 'caramel-machiato', name: 'Caramel Machiato', category: 'espresso', price: 34000, description: 'Espresso, susu evaporasi, full cream, sirup hazelnut, caramel sauce.', composition: 'Espresso, susu evaporasi, susu full cream, sirup hazelnut, karamel.', image: 'https://images.unsplash.com/photo-1485808191679-5f86510681a2?w=800&q=80', badge: 'Best Seller', isAvailable: true },
+      { id: 'kopi-susu-gula-aren', name: 'Kopi Susu Gula Aren', category: 'espresso', price: 25000, description: 'Espresso, susu evaporasi, gula aren murni, full cream/fresh milk.', composition: 'Double shot espresso, gula aren asli, susu evaporasi, fresh milk.', image: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=800&q=80', badge: 'Best Seller', isAvailable: true },
+      { id: 'flat-white-hot', name: 'Flat White Hot', category: 'espresso', price: 30000, description: 'Double ristretto, fresh milk foam tipis beludru, brown sugar stick.', composition: 'Double ristretto, steamed microfoam halus.', image: 'https://images.unsplash.com/photo-1577968897966-3d4325b36b61?w=800&q=80', isAvailable: true },
+      { id: 'kopi-susu-madu-iced', name: 'Kopi Susu Madu Iced', category: 'espresso', price: 28000, description: 'Espresso, simple syrup, susu evaporasi, full cream, madu murni.', composition: 'Espresso, madu murni, susu evaporasi gurih, full cream.', image: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=800&q=80', isAvailable: true },
+      { id: 'utikini-hot', name: 'Utikini Hot', category: 'espresso', price: 22000, description: 'Kopi tubruk tradisional khas pedalaman Papua + susu kental manis (SKM).', composition: 'Bubuk kopi pedalaman Papua diseduh mendidih + SKM manis gurih.', image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&q=80', badge: '100% Kopi Papua', isAvailable: true },
+      { id: 'wanagon-signature', name: 'Wanagon (Signature)', category: 'espresso', price: 38000, description: 'Jus alpukat mentega + single espresso di atasnya + topping ice cream coklat.', composition: 'Alpukat mentega kental asli, 1 shot espresso, 1 scoop coklat ice cream.', image: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800&q=80', badge: 'Signature', isAvailable: true },
+
+      // C. NON-COFFEE
+      { id: 'milkshake-special', name: 'WBFC Milkshake', category: 'non-coffee', price: 28000, description: 'Pilihan Vanilla / Strawberry / Coklat. 2 scoop ice cream, susu full cream, es batu.', composition: '2 scoop ice cream, fresh milk full cream, blended dingin.', image: 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=800&q=80', badge: 'Best Seller', isAvailable: true },
+
+      // D. MAKANAN UTAMA
+      { id: 'kwetiau-goreng', name: 'Kwetiau Goreng', category: 'makanan', price: 33000, description: 'Kwetiau tumis bawang putih chop, isi bakso, ayam, tauge, paucay, telur.', composition: 'Kwetiau beras, bawang putih chop wangi, bakso, ayam, tauge, sayur paucay, telur.', image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800&q=80', isAvailable: true },
+      { id: 'nasgor-terasi', name: 'Nasgor Terasi', category: 'makanan', price: 32000, description: 'Nasi goreng bumbu terasi khas + 2 telur (1 dicampur, 1 ceplok) + kerupuk.', composition: 'Nasi, terasi udang khas harum, 2 telur, kerupuk.', image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800&q=80', badge: 'Best Seller', isAvailable: true },
+      { id: 'nasgor-special', name: 'Nasgor Special', category: 'makanan', price: 42000, description: 'Nasi goreng terasi + tambahan ayam takupas / ayam lengkuas + sambal.', composition: 'Nasgor terasi, 2 telur, pilihan lauk ayam takupas / ayam lengkuas + sambal.', image: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&q=80', badge: 'Best Seller', isAvailable: true },
+      { id: 'nasi-ayam-lengkuas', name: 'Nasi Ayam Lengkuas', category: 'makanan', price: 36000, description: 'Nasi + ayam goreng bumbu lengkuas + sambal terasi + garnish.', composition: 'Nasi putih hangat, ayam goreng bumbu lengkuas garing, serundeng, sambal terasi.', image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=800&q=80', isAvailable: true },
+      { id: 'nasi-ayam-takupas', name: 'Nasi Ayam Takupas', category: 'makanan', price: 38000, description: 'Nasi + ayam bakar takupas + sambal jahe khas + garnish.', composition: 'Nasi putih, ayam bakar bumbu rahasia takupas Papua, sambal jahe ulek segar.', image: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=800&q=80', badge: 'Signature', isAvailable: true },
+      { id: 'nasi-ayam-rica', name: 'Nasi Ayam Rica', category: 'makanan', price: 36000, description: 'Nasi + ayam bumbu rica-rica khas Manado pedas gurih + garnish.', composition: 'Nasi putih, ayam bumbu rica cabai rawit merah & kemangi segar.', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&q=80', isAvailable: true },
+      { id: 'nasi-bebek-rw', name: 'Nasi Bebek RW', category: 'makanan', price: 45000, description: 'Nasi + bebek bumbu khas RW pedas gurih kaya rempah sereh & pandan.', composition: 'Nasi putih hangat, daging bebek empuk bumbu rempah pedas RW tradisional.', image: 'https://images.unsplash.com/photo-1514944298352-7e04543b590e?w=800&q=80', badge: 'Signature', isAvailable: true },
+      { id: 'indomie-telur', name: 'Indomie (Kuah / Goreng)', category: 'makanan', price: 18000, description: 'Disajikan hangat lengkap dengan telur ayam ceplok/matang.', composition: 'Indomie pilihan rasa + telur ayam + sawi hijau + bawang goreng.', image: 'https://images.unsplash.com/photo-1612927601601-6638404737ce?w=800&q=80', isAvailable: true },
+      { id: 'spaghetti-wow', name: 'Spaghetti Wow', category: 'makanan', price: 36000, description: 'Spaghetti creamy disajikan dengan saus susu dan parutan keju gurih.', composition: 'Spaghetti al dente, saus susu creamy gurih, keju parmesan & cheddar.', image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=800&q=80', isAvailable: true },
+
+      // E. SNACKS / CAMILAN
+      { id: 'lumpia-goreng', name: 'Lumpia', category: 'snack', price: 20000, description: 'Lumpia isi sayuran (bengkoang, buncis, ayam, telur, wortel) + saus khas lumpia.', composition: 'Kulit lumpia garing, isian bengkoang, buncis, ayam, telur, saus cocolan.', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&q=80', isAvailable: true },
+      { id: 'pisang-goreng', name: 'Pisang Goreng Keju', category: 'snack', price: 22000, description: 'Pisang ambon goreng tepung renyah + topping keju parut gurih.', composition: 'Pisang ambon manis, tepung garing, taburan keju cheddar parut, susu SKM.', image: 'https://images.unsplash.com/photo-1587314168485-3236d6710814?w=800&q=80', badge: 'Best Seller', isAvailable: true },
+      { id: 'kentang-sosis-goreng', name: 'Kentang + Sosis Goreng', category: 'snack', price: 24000, description: 'French fries & sosis sapi goreng dengan cocolan saus.', composition: 'Kentang goreng crinkle-cut garing & sosis sapi goreng renyah.', image: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?w=800&q=80', isAvailable: true },
+      { id: 'bala-bala', name: 'Bala-bala', category: 'snack', price: 16000, description: 'Bakwan khas Sunda renyah gurih (kol + wortel) dengan cabai rawit hijau.', composition: 'Kol, wortel, tepung bumbu khas Sunda renyah.', image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&q=80', isAvailable: true },
+      { id: 'gisei-pu-banana', name: 'Gisei Pu Banana (Special)', category: 'snack', price: 25000, description: 'Pisang coklat & keju mozarella dibungkus kulit lumpia + topping keju parut melimpah.', composition: 'Pisang, cokelat leleh, keju mozarella, kulit lumpia, topping keju parut.', image: 'https://images.unsplash.com/photo-1587314168485-3236d6710814?w=800&q=80', badge: 'Signature', isAvailable: true },
+      { id: 'roti-bakar', name: 'Roti Bakar Special', category: 'snack', price: 24000, description: 'Roti tawar bakar dengan topping keju, coklat, oreo, dan susu SKM.', composition: 'Roti tawar bakar butter, keju cheddar, pasta coklat, remahan Oreo, susu SKM.', image: 'https://images.unsplash.com/photo-1584776296944-ab6fb57b0bdd?w=800&q=80', badge: 'Best Seller', isAvailable: true },
+      { id: 'gehu', name: 'Gehu Pedas', category: 'snack', price: 16000, description: 'Tahu isi sayuran pedas khas Sunda (kol + wortel + cabai rawit).', composition: 'Tahu goreng krispi, tumisan sayuran kol dan wortel pedas cabai rawit.', image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&q=80', isAvailable: true }
+    ];
+
+    const CATEGORIES = [
+      { id: 'all', label: 'Semua Menu' },
+      { id: 'rekomendasi', label: '⭐ Rekomendasi' },
+      { id: 'papua-v60', label: 'Kopi Papua V60' },
+      { id: 'espresso', label: 'Espresso Based' },
+      { id: 'non-coffee', label: 'Non-Coffee' },
+      { id: 'makanan', label: 'Makanan Utama' },
+      { id: 'snack', label: 'Snack & Camilan' }
+    ];
+
+    let cart = [];
+    let currentCategory = 'all';
+    let currentSearch = '';
+    let currentTasting = '';
+    let selectedItem = null;
+    let selectedAddOns = [];
+    let modalQty = 1;
+    let tableNumber = new URLSearchParams(window.location.search).get('table') || '43';
+
+    function init() {
+      document.getElementById('table-number-text').innerText = 'Meja ' + tableNumber;
+      renderCategories();
+      renderMenu();
+      lucide.createIcons();
+    }
+
+    function formatRupiah(val) {
+      return 'Rp ' + Number(val).toLocaleString('id-ID');
+    }
+
+    function promptChangeTable() {
+      const val = prompt('Ubah nomor meja:', tableNumber);
+      if (val && val.trim()) {
+        tableNumber = val.trim();
+        document.getElementById('table-number-text').innerText = 'Meja ' + tableNumber;
+      }
+    }
+
+    function renderCategories() {
+      const container = document.getElementById('category-tabs');
+      container.innerHTML = CATEGORIES.map(cat => \`
+        <button onclick="selectCategory('\${cat.id}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap \${currentCategory === cat.id ? 'bg-amber-500 text-zinc-950 font-bold' : 'bg-zinc-900 text-zinc-300 border border-zinc-800'}">
+          \${cat.label}
+        </button>
+      \`).join('');
+    }
+
+    function selectCategory(catId) {
+      currentCategory = catId;
+      renderCategories();
+      renderMenu();
+    }
+
+    function handleSearch(q) {
+      currentSearch = q.toLowerCase();
+      renderMenu();
+    }
+
+    function handleTastingFilter(note) {
+      currentTasting = note;
+      renderMenu();
+    }
+
+    function renderMenu() {
+      const grid = document.getElementById('menu-grid');
+      const filtered = MENU_DATA.filter(item => {
+        const matchCat = currentCategory === 'all' || 
+          (currentCategory === 'rekomendasi' ? (item.badge === 'Best Seller' || item.badge === 'Signature') : item.category === currentCategory);
+        const matchSearch = !currentSearch || item.name.toLowerCase().includes(currentSearch) || (item.description && item.description.toLowerCase().includes(currentSearch));
+        const matchTasting = !currentTasting || (item.tastingNotes && item.tastingNotes.some(n => n.includes(currentTasting)));
+        return matchCat && matchSearch && matchTasting;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '<div class="col-span-full py-12 text-center text-zinc-500 text-xs">Tidak ada menu yang sesuai kriteria pencarian.</div>';
+        return;
+      }
+
+      grid.innerHTML = filtered.map(item => {
+        const isOutOfStock = !item.isAvailable;
+        return \`
+          <div onclick="\${isOutOfStock ? '' : \`openDetailModal('\${item.id}')\`}" class="bg-zinc-900 border \${isOutOfStock ? 'border-zinc-800 opacity-60' : 'border-zinc-800 hover:border-amber-500/50 cursor-pointer'} rounded-2xl overflow-hidden flex flex-col">
+            <div class="relative aspect-video bg-zinc-950">
+              <img src="\${item.image}" alt="\${item.name}" class="w-full h-full object-cover \${isOutOfStock ? 'grayscale' : ''}">
+              \${item.badge ? \`<span class="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-black">\${item.badge}</span>\` : ''}
+              \${item.tastingNotes ? \`<span class="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/80 text-[10px] text-amber-300">Notes: \${item.tastingNotes.join(', ')}</span>\` : ''}
+            </div>
+            <div class="p-3.5 flex flex-col justify-between flex-1 gap-2">
+              <div>
+                <h3 class="text-sm font-bold text-white line-clamp-1">\${item.name}</h3>
+                <p class="text-xs text-zinc-400 line-clamp-2 mt-0.5">\${item.description || item.composition}</p>
+              </div>
+              <div class="flex items-center justify-between pt-2 border-t border-zinc-800">
+                <span class="text-sm font-extrabold text-amber-400">\${formatRupiah(item.price)}</span>
+                <button class="px-3 py-1.5 rounded-xl text-xs font-bold \${isOutOfStock ? 'bg-zinc-800 text-zinc-500' : 'bg-red-600 text-white'}">
+                  \${isOutOfStock ? 'Habis' : '+ Pesan'}
+                </button>
+              </div>
+            </div>
+          </div>
+        \`;
+      }).join('');
+    }
+
+    function openDetailModal(itemId) {
+      selectedItem = MENU_DATA.find(i => i.id === itemId);
+      if (!selectedItem) return;
+      selectedAddOns = [];
+      modalQty = 1;
+
+      document.getElementById('detail-img').src = selectedItem.image;
+      document.getElementById('detail-name').innerText = selectedItem.name;
+      document.getElementById('detail-desc').innerText = selectedItem.description || '';
+      document.getElementById('detail-comp').innerText = selectedItem.composition || '-';
+      document.getElementById('detail-note').value = '';
+
+      const storyBox = document.getElementById('detail-story-box');
+      if (selectedItem.story) {
+        storyBox.classList.remove('hidden');
+        document.getElementById('detail-story').innerText = selectedItem.story;
+        document.getElementById('detail-meta-box').innerText = selectedItem.tastingNotes ? 'Tasting Notes: ' + selectedItem.tastingNotes.join(', ') : '';
+      } else {
+        storyBox.classList.add('hidden');
+      }
+
+      // Addons standard
+      const addonsBox = document.getElementById('detail-addons-box');
+      const addonsList = document.getElementById('detail-addons-list');
+      const standardAddOns = [
+        { id: 'shot', name: 'Extra Shot Espresso', price: 5000 },
+        { id: 'cheese', name: 'Extra Cheese Foam', price: 5000 },
+        { id: 'flavor', name: 'Flavored Syrup (Vanilla)', price: 4000 }
+      ];
+
+      addonsList.innerHTML = standardAddOns.map(add => \`
+        <label class="flex items-center justify-between p-2 rounded-lg bg-zinc-800 text-xs cursor-pointer">
+          <span class="flex items-center gap-2">
+            <input type="checkbox" onchange="toggleAddon('\${add.id}', \${add.price}, '\${add.name}', this.checked)" class="accent-amber-500">
+            <span>\${add.name}</span>
+          </span>
+          <span class="text-amber-400 font-bold">+\${formatRupiah(add.price)}</span>
+        </label>
+      \`).join('');
+
+      updateDetailPrice();
+      document.getElementById('modal-detail').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeDetailModal() {
+      document.getElementById('modal-detail').classList.add('hidden');
+    }
+
+    function toggleAddon(id, price, name, isChecked) {
+      if (isChecked) {
+        selectedAddOns.push({ id, price, name });
+      } else {
+        selectedAddOns = selectedAddOns.filter(a => a.id !== id);
+      }
+      updateDetailPrice();
+    }
+
+    function adjustDetailQty(delta) {
+      modalQty = Math.max(1, modalQty + delta);
+      document.getElementById('detail-qty').innerText = modalQty;
+      updateDetailPrice();
+    }
+
+    function updateDetailPrice() {
+      if (!selectedItem) return;
+      const addOnsTotal = selectedAddOns.reduce((s, a) => s + a.price, 0);
+      const total = (selectedItem.price + addOnsTotal) * modalQty;
+      document.getElementById('detail-total-price').innerText = formatRupiah(total);
+    }
+
+    function confirmAddToCart() {
+      const addOnsTotal = selectedAddOns.reduce((s, a) => s + a.price, 0);
+      const singlePrice = selectedItem.price + addOnsTotal;
+      const note = document.getElementById('detail-note').value;
+
+      cart.push({
+        id: selectedItem.id + '-' + Date.now(),
+        item: selectedItem,
+        quantity: modalQty,
+        addOns: [...selectedAddOns],
+        note: note,
+        totalPrice: singlePrice * modalQty
+      });
+
+      closeDetailModal();
+      updateCartUI();
+    }
+
+    function updateCartUI() {
+      const floating = document.getElementById('floating-cart');
+      const totalCount = cart.reduce((s, i) => s + i.quantity, 0);
+      const subtotal = cart.reduce((s, i) => s + i.totalPrice, 0);
+
+      if (totalCount > 0) {
+        floating.classList.remove('hidden');
+        document.getElementById('cart-btn-label').innerText = \`Lihat Keranjang (\${totalCount} item)\`;
+        document.getElementById('cart-btn-total').innerText = formatRupiah(subtotal);
+      } else {
+        floating.classList.add('hidden');
+      }
+    }
+
+    function openCartModal() {
+      const container = document.getElementById('cart-items-container');
+      const subtotal = cart.reduce((s, i) => s + i.totalPrice, 0);
+      const tax = Math.round(subtotal * 0.1);
+      const grandTotal = subtotal + tax;
+
+      document.getElementById('cart-header-table').innerText = 'Meja ' + tableNumber;
+      document.getElementById('cart-grand-total').innerText = formatRupiah(grandTotal);
+
+      if (cart.length === 0) {
+        container.innerHTML = '<div class="py-8 text-center text-zinc-500 text-xs">Keranjang masih kosong.</div>';
+      } else {
+        container.innerHTML = cart.map((c, idx) => \`
+          <div class="p-3 bg-zinc-800/80 rounded-xl space-y-1 text-xs">
+            <div class="flex justify-between font-bold text-white">
+              <span>\${c.quantity}x \${c.item.name}</span>
+              <span class="text-amber-400">\${formatRupiah(c.totalPrice)}</span>
+            </div>
+            \${c.addOns.length ? \`<div class="text-[11px] text-zinc-400">Add-On: \${c.addOns.map(a => a.name).join(', ')}</div>\` : ''}
+            \${c.note ? \`<div class="text-[11px] text-zinc-400 italic">Catatan: "\${c.note}"</div>\` : ''}
+            <button onclick="removeCartItem(\${idx})" class="text-[11px] text-red-400 hover:underline pt-1">Hapus</button>
+          </div>
+        \`).join('');
+      }
+
+      document.getElementById('modal-cart').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeCartModal() {
+      document.getElementById('modal-cart').classList.add('hidden');
+    }
+
+    function removeCartItem(idx) {
+      cart.splice(idx, 1);
+      openCartModal();
+      updateCartUI();
+    }
+
+    function processCheckout() {
+      const name = document.getElementById('customer-name').value.trim();
+      if (!name) {
+        alert('Mohon masukkan nama pemesan!');
+        return;
+      }
+      const orderCode = 'WBFC-' + tableNumber + '-' + Math.floor(1000 + Math.random() * 9000);
+      document.getElementById('success-code').innerText = orderCode;
+
+      QRCode.toCanvas(document.getElementById('success-qr-canvas'), orderCode, { width: 160 }, function() {});
+
+      cart = [];
+      updateCartUI();
+      closeCartModal();
+      document.getElementById('modal-success').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function resetOrderFlow() {
+      document.getElementById('modal-success').classList.add('hidden');
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
